@@ -1,0 +1,9 @@
+string choice # Choice of next state post observe
+
+# Constants for values of choice
+string POST=post
+string INTERRUPT=interrupt
+string IGNORE=ignore # Not strictly the correct place for this constant, but oh well
+---
+bool success
+string message
