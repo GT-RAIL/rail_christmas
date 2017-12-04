@@ -222,7 +222,6 @@ void GraspSampler::rankGraspsObject(const rail_grasp_calculation_msgs::RankGrasp
 
 void GraspSampler::rankGraspsPOI(const rail_grasp_calculation_msgs::RankGraspsGoalConstPtr &goal)
 {
-  ROS_INFO("0");
   rail_grasp_calculation_msgs::RankGraspsFeedback feedback;
   rail_grasp_calculation_msgs::RankGraspsResult result;
 
@@ -368,7 +367,32 @@ void GraspSampler::rankGraspsPOI(const rail_grasp_calculation_msgs::RankGraspsGo
                      + pow(goal->workspace.roiDimensions.y/2.0, 2)
                      + pow(goal->workspace.roiDimensions.z/2.0, 2));
 
-    double h = 0.6*h1 + 0.25*h2 + 0.15*h3;
+    //special heuristic: alignment with gravity vector (NOTE: requires hardcoded frame transformation!)
+    geometry_msgs::PoseStamped poseIn, poseOut;
+    poseIn.pose = finalPoses.poses[i];
+    poseIn.header = finalPoses.header;
+    poseOut.header.frame_id = "base_link";
+    tfListener.transformPose("base_link", ros::Time(0), poseIn, "base_link", poseOut);
+
+    Eigen::Vector3d xVector, gVector;
+    xVector[0] = 1;
+    xVector[1] = 0;
+    xVector[2] = 0;
+    gVector[0] = 0;
+    gVector[1] = 0;
+    gVector[2] = -1;
+
+    Eigen::Quaterniond poseQuaternion;
+    Eigen::Matrix3d poseRotationMatrix;
+    tf::quaternionMsgToEigen(poseOut.pose.orientation, poseQuaternion);
+    poseRotationMatrix = poseQuaternion.toRotationMatrix();
+    Eigen::Vector3d testXVector = poseRotationMatrix * xVector;
+    testXVector.normalize();
+    double deltaAngle = acos(testXVector.dot(gVector));
+    double h4 = deltaAngle/M_PI;
+
+    //double h = 0.5*h4 + 0.3*h1 + 0.125*h2 + 0.075*h3;
+    double h = h4;
     PoseWithHeuristic rankedPose(finalPoses.poses[i], h);
     rankedFinalPoses.push_back(rankedPose);
   }
@@ -384,6 +408,8 @@ void GraspSampler::rankGraspsPOI(const rail_grasp_calculation_msgs::RankGraspsGo
     tempHs.heuristics = rankedFinalPoses[i].hComponents;
     result.heuristicList.push_back(tempHs);
   }
+
+  ROS_INFO("Best grasp rank: %f", rankedFinalPoses[0].h);
 
   rankGraspsPOIServer.setSucceeded(result);
 }
