@@ -133,6 +133,7 @@ class FindGraspState(smach.State):
         self.find_grasp_location = find_grasp_location
         self.find_grasp_pan = find_grasp_pan
         self.find_grasp_tilt = find_grasp_tilt
+        self.grasp_pose = None
         self.tilt_publisher = rospy.Publisher(
             '/tilt_controller/command', Float64, queue_size=1
         )
@@ -141,6 +142,10 @@ class FindGraspState(smach.State):
         )
 
         self.tf_listener = tf.TransformListener()
+        self.grasp_subscriber = rospy.Subscriber('/generator/grasp_topic', PoseStamped, self.set_grasp)
+
+    def set_grasp(self, input_grasp_data):
+        self.grasp_pose = input_grasp_data
 
     def execute(self, userdata):
         if self.base_client is None:
@@ -160,20 +165,10 @@ class FindGraspState(smach.State):
         self.tilt_publisher.publish(Float64(self.find_grasp_tilt))
         self.pan_publisher.publish(Float64(self.find_grasp_pan))
 
-        # TODO call grasp finder (below is commented skeleton of what to do maybe?)
-        # self.have_new_grasp_server = rospy.Service('~have_new_grasp', Trigger, self._handle_new_grasp)
-    # def _handle_new_grasp(self, req):
-    #     """Indicate that there is candy in the gripper"""
-    #     if not self._have_new_grasp:
-    #         self._have_new_grasp = True
-    #         self.grasp = req.grasp_data
-    #     return TriggerResponse(success=True)
-
-        # while not self._have_new_grasp:
-        #     rospy.sleep(rospy.Duration(nsecs=1e8))
-        # userdata.target_pose = self.grasp
-        # return 'done'
-
+        while self.grasp_pose is None:
+            rospy.sleep(rospy.Duration(nsecs=1e8))
+        userdata.target_pose = self.grasp_pose
+        self.grasp_pose = None
         return 'done'
 
 
@@ -201,7 +196,8 @@ class PlaceCandyState(smach.State):
         """
 
         # Only needs to be a pose and not a pose stamped
-        target = userdata.target_pose
+        target = userdata.target_pose.pose
+        # TODO: Get header / transform frame data from userdata.target_pose
 
         # TODO: Transform pose from grasp to orientation of gripper
         # TODO: Include an offset of positive Z so that the cane is above the
