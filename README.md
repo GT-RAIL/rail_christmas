@@ -51,3 +51,9 @@
                                                                    +:  /+y  `      `` ```` ```  ` `
                                                                     ////o-  .`----..---..-...-...-.`
 ```
+
+## Running grasp calculation:
+1. roslaunch rail_grasp_calculation_nodes find_grasps.launch
+1. rosrun tree_point_and_click generator
+1. rosrun tree_point_and_click clicker
+1. rosrun rviz rviz
