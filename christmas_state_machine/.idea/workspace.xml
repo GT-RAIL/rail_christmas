@@ -14,8 +14,8 @@
       <file leaf-file-name="state_machines.py" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/christmas_state_machine/state_machines.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="373">
-              <caret line="71" column="31" lean-forward="false" selection-start-line="71" selection-start-column="31" selection-end-line="71" selection-end-column="31" />
+            <state relative-caret-position="391">
+              <caret line="84" column="29" lean-forward="true" selection-start-line="84" selection-start-column="29" selection-end-line="84" selection-end-column="29" />
               <folding>
                 <element signature="e#55#65#0" expanded="true" />
               </folding>
@@ -26,13 +26,35 @@
       <file leaf-file-name="states.py" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/christmas_state_machine/states.py">
           <provider selected="true" editor-type-id="text-editor">
-            <state relative-caret-position="216">
-              <caret line="77" column="83" lean-forward="false" selection-start-line="77" selection-start-column="83" selection-end-line="77" selection-end-column="83" />
+            <state relative-caret-position="-383">
+              <caret line="162" column="83" lean-forward="false" selection-start-line="162" selection-start-column="83" selection-end-line="162" selection-end-column="83" />
               <folding>
                 <element signature="e#55#102#0" expanded="true" />
                 <element signature="e#698#1579#0" expanded="false" />
-                <element signature="e#5074#6575#0" expanded="false" />
               </folding>
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="robot_params.yaml" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/config/robot_params.yaml">
+          <provider selected="true" editor-type-id="text-editor">
+            <state relative-caret-position="162">
+              <caret line="9" column="13" lean-forward="false" selection-start-line="9" selection-start-column="13" selection-end-line="9" selection-end-column="13" />
+              <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="README.md" pinned="false" current-in-tab="false">
+        <entry file="file://$PROJECT_DIR$/README.md">
+          <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+            <state split_layout="SPLIT">
+              <first_editor relative-caret-position="72">
+                <caret line="4" column="0" lean-forward="true" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
+                <folding />
+              </first_editor>
+              <second_editor />
             </state>
           </provider>
         </entry>
@@ -53,6 +75,8 @@
         <option value="$PROJECT_DIR$/CMakeLists.txt" />
         <option value="$PROJECT_DIR$/src/study_state_machine/state_machines.py" />
         <option value="$PROJECT_DIR$/src/study_state_machine/states.py" />
+        <option value="$PROJECT_DIR$/README.md" />
+        <option value="$PROJECT_DIR$/config/robot_params.yaml" />
         <option value="$PROJECT_DIR$/src/christmas_state_machine/state_machines.py" />
         <option value="$PROJECT_DIR$/src/christmas_state_machine/states.py" />
       </list>
@@ -222,7 +246,6 @@
           <folding>
             <element signature="e#55#102#0" expanded="true" />
             <element signature="e#698#1579#0" expanded="false" />
-            <element signature="e#5074#6575#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -282,14 +305,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/config/robot_params.yaml">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/srv/EndManual.srv">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -306,16 +321,6 @@
         </state>
       </provider>
     </entry>
-    <entry file="file://$PROJECT_DIR$/src/christmas_state_machine/state_machines.py">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="373">
-          <caret line="71" column="31" lean-forward="false" selection-start-line="71" selection-start-column="31" selection-end-line="71" selection-end-column="31" />
-          <folding>
-            <element signature="e#55#65#0" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/config/simulation_params.yaml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="0">
@@ -324,14 +329,42 @@
         </state>
       </provider>
     </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider selected="true" editor-type-id="split-provider[text-editor;markdown-preview-editor]">
+        <state split_layout="SPLIT">
+          <first_editor relative-caret-position="72">
+            <caret line="4" column="0" lean-forward="true" selection-start-line="4" selection-start-column="0" selection-end-line="4" selection-end-column="0" />
+            <folding />
+          </first_editor>
+          <second_editor />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/config/robot_params.yaml">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="162">
+          <caret line="9" column="13" lean-forward="false" selection-start-line="9" selection-start-column="13" selection-end-line="9" selection-end-column="13" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/christmas_state_machine/state_machines.py">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="391">
+          <caret line="84" column="29" lean-forward="true" selection-start-line="84" selection-start-column="29" selection-end-line="84" selection-end-column="29" />
+          <folding>
+            <element signature="e#55#65#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/christmas_state_machine/states.py">
       <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="216">
-          <caret line="77" column="83" lean-forward="false" selection-start-line="77" selection-start-column="83" selection-end-line="77" selection-end-column="83" />
+        <state relative-caret-position="-383">
+          <caret line="162" column="83" lean-forward="false" selection-start-line="162" selection-start-column="83" selection-end-line="162" selection-end-column="83" />
           <folding>
             <element signature="e#55#102#0" expanded="true" />
             <element signature="e#698#1579#0" expanded="false" />
-            <element signature="e#5074#6575#0" expanded="false" />
           </folding>
         </state>
       </provider>

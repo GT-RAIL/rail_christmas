@@ -30,28 +30,40 @@ class ChristmasStateMachine(object):
         # Location specific parameters
         loc_header = Header(frame_id='/map')
 
-        wait_location_param = rospy.get_param(
-            '~wait_location', { 'pos': [], 'ori': [], 'ang': 0.0 }
+        accept_candy_location_param = rospy.get_param(
+            '~accept_candy_location', {'pos': [], 'ori': [], 'pan': 0.0, 'tilt': 0.0}
         )
-        wait_location = PoseStamped(
+        accept_candy_location = PoseStamped(
             header=loc_header,
             pose=Pose(
-                position=Point(*wait_location_param.get('pos')),
-                orientation=Quaternion(*wait_location_param.get('ori'))
+                position=Point(*accept_candy_location_param.get('pos')),
+                orientation=Quaternion(*accept_candy_location_param.get('ori'))
             )
         )
-        wait_angle = wait_location_param.get('ang')
 
-        pan_tilt_topic_name = rospy.get_param(
-            '~pan_tilt_topic_name',
-            '/tilt_controller/command'
+        find_grasp_location_param = rospy.get_param(
+            '~find_grasp_location', {'pos': [], 'ori': [], 'pan': 0.0, 'tilt': 0.0}
         )
+        find_grasp_location = PoseStamped(
+            header=loc_header,
+            pose=Pose(
+                position=Point(*find_grasp_location_param.get('pos')),
+                orientation=Quaternion(*find_grasp_location_param.get('ori'))
+            )
+        )
+        find_grasp_pan = find_grasp_location_param.get('pan')
+        find_grasp_tilt = find_grasp_location_param.get('tilt')
+
+        # TODO: set tuck pose to arm configuration for candy reception
+        tuck_pose = None
 
         # Setup the state machine
         with self.state_machine:
             smach.StateMachine.add(
                 'ACCEPT_CANDY',
-                AcceptCandyState(),
+                AcceptCandyState(
+                    accept_candy_location
+                ),
                 transitions={'done': 'FIND_GRASP',
                              'help': 'HELP'}
             )
@@ -59,7 +71,7 @@ class ChristmasStateMachine(object):
             smach.StateMachine.add(
                 'FIND_GRASP',
                 FindGraspState(
-                    wait_location, wait_angle, pan_tilt_topic_name
+                    find_grasp_location, find_grasp_pan, find_grasp_tilt
                 ),
                 transitions={
                     'done': 'PLACE_CANDY',
@@ -70,7 +82,7 @@ class ChristmasStateMachine(object):
             smach.StateMachine.add(
                 'PLACE_CANDY',
                 PlaceCandyState(
-                    observe_location, observe_angle, pan_tilt_topic_name
+                    tuck_pose
                 ),
                 transitions={
                     'done': 'ACCEPT_CANDY',

@@ -119,8 +119,9 @@ class AcceptCandyState(smach.State):
 class FindGraspState(smach.State):
     def __init__(
         self,
-        place_candy_location,
-        place_candy_angle
+        find_grasp_location,
+        find_grasp_pan,
+        find_grasp_tilt
     ):
         smach.State.__init__(
             self,
@@ -129,8 +130,9 @@ class FindGraspState(smach.State):
             output_keys=['target_pose']
         )
 
-        self.place_candy_location = place_candy_location
-        self.place_candy_angle = place_candy_angle
+        self.find_grasp_location = find_grasp_location
+        self.find_grasp_pan = find_grasp_pan
+        self.find_grasp_tilt = find_grasp_tilt
         self.tilt_publisher = rospy.Publisher(
             '/tilt_controller/command', Float64, queue_size=1
         )
@@ -147,17 +149,30 @@ class FindGraspState(smach.State):
                 MoveBaseAction
             )
             self.base_client.wait_for_server()
-        place_candy_location = MoveBaseGoal(target_pose=self.place_candy_location)
-        place_candy_location.target_pose.header.stamp = rospy.Time.now()
-        self.base_client.send_goal(place_candy_location)
+        find_grasp_location = MoveBaseGoal(target_pose=self.find_grasp_location)
+        find_grasp_location.target_pose.header.stamp = rospy.Time.now()
+        self.base_client.send_goal(find_grasp_location)
         self.base_client.wait_for_result()
 
         if self.base_client.get_state() != actionlib.GoalStatus.SUCCEEDED:
             return 'help'
 
-        # TODO publish to pan tilt
-        # self.pan_tilt_publisher.publish(Float64(self.place_candy_angle))
-        # TODO call grasp finder
+        self.tilt_publisher.publish(Float64(self.find_grasp_tilt))
+        self.pan_publisher.publish(Float64(self.find_grasp_pan))
+
+        # TODO call grasp finder (below is commented skeleton of what to do maybe?)
+        # self.have_new_grasp_server = rospy.Service('~have_new_grasp', Trigger, self._handle_new_grasp)
+    # def _handle_new_grasp(self, req):
+    #     """Indicate that there is candy in the gripper"""
+    #     if not self._have_new_grasp:
+    #         self._have_new_grasp = True
+    #         self.grasp = req.grasp_data
+    #     return TriggerResponse(success=True)
+
+        # while not self._have_new_grasp:
+        #     rospy.sleep(rospy.Duration(nsecs=1e8))
+        # userdata.target_pose = self.grasp
+        # return 'done'
 
         return 'done'
 
