@@ -1,9 +1,12 @@
 #!/usr/bin/env python
 # This defines the robot states
 
+import sys
 import rospy
 import rospkg
 import smach
+
+import moveit_commander
 
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 from std_msgs.msg import Header
@@ -21,7 +24,10 @@ class ChristmasStateMachine(object):
 
     def __init__(self):
         """Use ROS Params to set up a state machine"""
+
+        # Setup the state machine and start the moveit_commander
         self.state_machine = smach.StateMachine(outcomes=['end'])
+        moveit_commander.roscpp_initialize(sys.argv)
 
         # Get the parameters for the states. The subheadings show the groupings
 
