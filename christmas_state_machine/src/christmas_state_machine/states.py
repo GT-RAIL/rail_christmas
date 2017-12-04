@@ -75,7 +75,7 @@ class AcceptCandyState(smach.State):
 
         # Local vars to block until grasp
         self._candy_in_gripper = False
-        self.candy_in_gripper_server = rospy.Service('~candy_in_gripper', self._handle_candy_in_gripper)
+        self.candy_in_gripper_server = rospy.Service('~candy_in_gripper', Trigger, self._handle_candy_in_gripper)
 
         # Gripper
         self.gripper = Gripper()
@@ -125,8 +125,8 @@ class FindGraspState(smach.State):
         smach.State.__init__(
             self,
             outcomes=['place_candy'],
-            input_keys=['location'],
-            output_keys=['location', 'location_name', 'choice']
+            input_keys=[],
+            output_keys=['target_pose']
         )
 
         self.place_candy_location = place_candy_location
@@ -149,12 +149,15 @@ class FindGraspState(smach.State):
             self.base_client.wait_for_server()
         place_candy_location = MoveBaseGoal(target_pose=self.place_candy_location)
         place_candy_location.target_pose.header.stamp = rospy.Time.now()
-        self.pan_tilt_publisher.publish(Float64(self.place_candy_angle))
         self.base_client.send_goal(place_candy_location)
         self.base_client.wait_for_result()
 
         if self.base_client.get_state() != actionlib.GoalStatus.SUCCEEDED:
             return 'help'
+
+        # TODO publish to pan tilt
+        # self.pan_tilt_publisher.publish(Float64(self.place_candy_angle))
+        # TODO call grasp finder
 
         return 'done'
 
