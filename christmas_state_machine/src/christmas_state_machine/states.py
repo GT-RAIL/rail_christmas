@@ -31,9 +31,9 @@ class HelpState(smach.State):
     def __init__(self):
         smach.State.__init__(
             self,
-            outcomes=['done'],
-            input_keys=[],
-            output_keys=[]
+            outcomes=['accept', 'find', 'place'],
+            input_keys=['target_pose', 'prev_state'],
+            output_keys=['target_pose']
         )
 
         # Service server to transition the robot back to the correct state
@@ -54,7 +54,7 @@ class HelpState(smach.State):
         while not self._helped:
             rospy.sleep(rospy.Duration(nsecs=1e8))
 
-        return 'done'
+        return userdata.prev_state
 
 
 class AcceptCandyState(smach.State):
@@ -62,12 +62,17 @@ class AcceptCandyState(smach.State):
 
     def __init__(
         self,
+        tuck_pose,
         accept_candy_location
     ):
         smach.State.__init__(
             self,
-            outcomes=['done']
+            outcomes=['done', 'help'],
+            output_keys=['prev_state']
         )
+
+        self.tuck_pose = tuck_pose
+        self.arm = Arm()
 
         # Move Base
         self.accept_candy_location = accept_candy_location
@@ -80,6 +85,15 @@ class AcceptCandyState(smach.State):
         # Gripper
         self.gripper = Gripper()
 
+        # Pan Tilt
+        self.tilt_publisher = rospy.Publisher(
+            '/tilt_controller/command', Float64, queue_size=1
+        )
+        self.pan_publisher = rospy.Publisher(
+            '/pan_controller/command', Float64, queue_size=1
+        )
+
+
     def _handle_candy_in_gripper(self, req):
         """Indicate that there is candy in the gripper"""
         if not self._candy_in_gripper:
@@ -89,6 +103,19 @@ class AcceptCandyState(smach.State):
 
     def execute(self, userdata):
         """Move to wait location and poll for time"""
+        self.tilt_publisher.publish(Float64(0))
+        self.pan_publisher.publish(Float64(0))
+
+        try:
+            plan = self.arm.plan_ee_pos(self.tuck_pose)
+            execution = self.arm.move_robot(plan)
+            if not execution:
+                rospy.logwarn("Execution returned False")
+        except Exception as e:
+            rospy.logerror("{}: IGNORING".format(e))
+        self.gripper.open()
+
+        rospy.loginfo("Arm is ready to accept candy")
 
         # Initialize the action client if that is not already true
         if self.base_client is None:
@@ -107,9 +134,11 @@ class AcceptCandyState(smach.State):
         self.base_client.wait_for_result()
         if self.base_client.get_state() != actionlib.GoalStatus.SUCCEEDED:
             rospy.logwarn("wait: navigate to location failed")
+            userdata.prev_state = 'accept'
             return 'help'
 
         # Wait until the candy is in the gripper
+        rospy.loginfo("Waiting for candy")
         while not self._candy_in_gripper:
             rospy.sleep(rospy.Duration(nsecs=1e8))
 
@@ -125,9 +154,9 @@ class FindGraspState(smach.State):
     ):
         smach.State.__init__(
             self,
-            outcomes=['place_candy'],
+            outcomes=['done', 'help'],
             input_keys=[],
-            output_keys=['target_pose']
+            output_keys=['target_pose', 'prev_state']
         )
 
         self.find_grasp_location = find_grasp_location
@@ -143,6 +172,8 @@ class FindGraspState(smach.State):
 
         self.tf_listener = tf.TransformListener()
         self.grasp_subscriber = rospy.Subscriber('/generator/grasp_topic', PoseStamped, self.set_grasp)
+
+        self.base_client = None
 
     def set_grasp(self, input_grasp_data):
         self.grasp_pose = input_grasp_data
@@ -160,11 +191,13 @@ class FindGraspState(smach.State):
         self.base_client.wait_for_result()
 
         if self.base_client.get_state() != actionlib.GoalStatus.SUCCEEDED:
+            userdata.prev_state = 'find'
             return 'help'
 
         self.tilt_publisher.publish(Float64(self.find_grasp_tilt))
         self.pan_publisher.publish(Float64(self.find_grasp_pan))
 
+        rospy.loginfo("Waiting for grasp pose")
         while self.grasp_pose is None:
             rospy.sleep(rospy.Duration(nsecs=1e8))
         userdata.target_pose = self.grasp_pose
@@ -175,21 +208,21 @@ class FindGraspState(smach.State):
 class PlaceCandyState(smach.State):
     def __init__(
         self,
-        tuck_pose,
         retreat_location
     ):
         smach.State.__init__(
             self,
             outcomes=['done', 'help'],
             input_keys=['target_pose'],
-            output_keys=[]
+            output_keys=['prev_state']
         )
 
         # Arm
         self.arm = Arm()
         self.gripper = Gripper()
-        self.tuck_pose = tuck_pose
         self.retreat_location = retreat_location
+
+        self.base_client = None
 
     def execute(self, userdata):
         """
@@ -197,27 +230,29 @@ class PlaceCandyState(smach.State):
         :param userdata: smach data passed between states
         :return:
         """
+        if None:
+            # Only needs to be a pose and not a pose stamped
+            # TODO: Get header / transform frame data from userdata.target_pose
+            target = userdata.target_pose.pose
 
-        # Only needs to be a pose and not a pose stamped
-        target = userdata.target_pose.pose
-        # TODO: Get header / transform frame data from userdata.target_pose
+            # TODO: Transform pose from grasp to orientation of gripper
+            # TODO: Include an offset of positive Z so that the cane is above the
+            # grasp location
+            try:
+                plan = self.arm.plan_ee_pos(target)
+                execution = self.arm.move_robot(plan)
+                if not execution:
+                    rospy.logwarn("Execution returned False")
+            except Exception as e:
+                rospy.logerror("{}".format(e))
+                userdata.prev_state = 'place'
+                return 'help'
 
-        # TODO: Transform pose from grasp to orientation of gripper
-        # TODO: Include an offset of positive Z so that the cane is above the
-        # grasp location
-        try:
-            plan = arm.plan_ee_pos(target)
-            execution = arm.move_robot(plan)
-            if not execution:
-                rospy.logwarn("Execution returned False")
-        except Exception as e:
-            rospy.logerror("{}".format(e))
-            return 'help'
+            # TODO: Move the arm down to place the candy on the tree
 
-        # TODO: Move the arm down to place the candy on the tree
-
-        # Open the gripper
+            # Open the gripper
         self.gripper.open()
+
         # Move backwards
         if self.base_client is None:
             self.base_client = actionlib.SimpleActionClient(
@@ -234,15 +269,6 @@ class PlaceCandyState(smach.State):
         self.base_client.send_goal(retreat_loc_goal)
         self.base_client.wait_for_result()
         if self.base_client.get_state() != actionlib.GoalStatus.SUCCEEDED:
-            rospy.logwarn("wait: navigate to location failed")
-            return 'help'
-
-        try:
-            plan = arm.plan_ee_pos(self.tuck_pose)
-            execution = arm.move_robot(plan)
-            if not execution:
-                rospy.logwarn("Execution returned False")
-        except Exception as e:
-            rospy.logerror("{}: IGNORING".format(e))
+            rospy.logwarn("retreat: navigate to location failed. IGNORING")
 
         return 'done'

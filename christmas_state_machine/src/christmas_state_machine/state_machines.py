@@ -64,18 +64,31 @@ class ChristmasStateMachine(object):
                 orientation=Quaternion(*retreat_location_param.get('ori'))
             )
         )
-        # TODO: set tuck pose to arm configuration for candy reception
-        tuck_pose = None
+        # set tuck pose to arm configuration for candy reception
+        tuck_pose_param = rospy.get_param(
+            '~accept_candy_arm_pose', {'pos': [], 'ori': []}
+        )
+        tuck_pose = Pose(
+            position=Point(*tuck_pose_param.get('pos')),
+            orientation=Quaternion(*tuck_pose_param.get('ori'))
+        )
 
         # Setup the state machine
         with self.state_machine:
             smach.StateMachine.add(
                 'ACCEPT_CANDY',
                 AcceptCandyState(
+                    tuck_pose,
                     accept_candy_location
                 ),
-                transitions={'done': 'FIND_GRASP',
-                             'help': 'HELP'}
+                transitions={
+                    'done': 'FIND_GRASP',
+                    'help': 'HELP'
+                },
+                remapping={
+                    'target_pose': 'target_pose',
+                    'prev_state': 'prev_state'
+                }
             )
 
             smach.StateMachine.add(
@@ -87,19 +100,24 @@ class ChristmasStateMachine(object):
                     'done': 'PLACE_CANDY',
                     'help': 'HELP',
                 },
-                remapping={'target_pose': 'target_pose'}
+                remapping={
+                    'target_pose': 'target_pose',
+                    'prev_state': 'prev_state'
+                }
             )
             smach.StateMachine.add(
                 'PLACE_CANDY',
                 PlaceCandyState(
-                    tuck_pose,
                     retreat_location
                 ),
                 transitions={
                     'done': 'ACCEPT_CANDY',
                     'help': 'HELP'
                 },
-                remapping={'target_pose': 'target_pose'}
+                remapping={
+                    'target_pose': 'target_pose',
+                    'prev_state': 'prev_state'
+                }
             )
 
             smach.StateMachine.add(
@@ -110,7 +128,10 @@ class ChristmasStateMachine(object):
                     'find': 'FIND_GRASP',
                     'place': 'PLACE_CANDY'
                 },
-                remapping={'target_pose': 'target_pose'}
+                remapping={
+                    'target_pose': 'target_pose',
+                    'prev_state': 'prev_state'
+                }
             )
 
     def execute(self):
