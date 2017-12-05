@@ -11,7 +11,7 @@ import moveit_commander
 from geometry_msgs.msg import PoseStamped, Pose, Point, Quaternion
 from std_msgs.msg import Header
 
-from christmas_state_machine.states import AcceptCandyState, FindGraspState, PlaceCandyState
+from christmas_state_machine.states import AcceptCandyState, FindGraspState, PlaceCandyState, HelpState
 
 # Define the state machine here
 
@@ -54,6 +54,16 @@ class ChristmasStateMachine(object):
         find_grasp_pan = find_grasp_location_param.get('pan')
         find_grasp_tilt = find_grasp_location_param.get('tilt')
 
+        retreat_location_param = rospy.get_param(
+            '~retreat_location', {'pos': [], 'ori': [], 'pan': 0.0, 'tilt': 0.0}
+        )
+        retreat_location = PoseStamped(
+            header=loc_header,
+            pose=Pose(
+                position=Point(*retreat_location_param.get('pos')),
+                orientation=Quaternion(*retreat_location_param.get('ori'))
+            )
+        )
         # TODO: set tuck pose to arm configuration for candy reception
         tuck_pose = None
 
@@ -82,7 +92,8 @@ class ChristmasStateMachine(object):
             smach.StateMachine.add(
                 'PLACE_CANDY',
                 PlaceCandyState(
-                    tuck_pose
+                    tuck_pose,
+                    retreat_location
                 ),
                 transitions={
                     'done': 'ACCEPT_CANDY',

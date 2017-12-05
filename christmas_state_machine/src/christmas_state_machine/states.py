@@ -175,7 +175,8 @@ class FindGraspState(smach.State):
 class PlaceCandyState(smach.State):
     def __init__(
         self,
-        tuck_pose
+        tuck_pose,
+        retreat_location
     ):
         smach.State.__init__(
             self,
@@ -187,6 +188,8 @@ class PlaceCandyState(smach.State):
         # Arm
         self.arm = Arm()
         self.gripper = Gripper()
+        self.tuck_pose = tuck_pose
+        self.retreat_location = retreat_location
 
     def execute(self, userdata):
         """
@@ -215,11 +218,27 @@ class PlaceCandyState(smach.State):
 
         # Open the gripper
         self.gripper.open()
+        # Move backwards
+        if self.base_client is None:
+            self.base_client = actionlib.SimpleActionClient(
+                'vector_move_base',
+                MoveBaseAction
+            )
+            self.base_client.wait_for_server()
 
-        # TODO: Might need a move in the negative X direction with the base?
+        # Create the goal for the robot to move towards
+        retreat_loc_goal = MoveBaseGoal(target_pose=self.retreat_location)
+        retreat_loc_goal.target_pose.header.stamp = rospy.Time.now()
+
+        # Move the robot to that goal
+        self.base_client.send_goal(retreat_loc_goal)
+        self.base_client.wait_for_result()
+        if self.base_client.get_state() != actionlib.GoalStatus.SUCCEEDED:
+            rospy.logwarn("wait: navigate to location failed")
+            return 'help'
 
         try:
-            plan = arm.plan_ee_pos(tuck_pose)
+            plan = arm.plan_ee_pos(self.tuck_pose)
             execution = arm.move_robot(plan)
             if not execution:
                 rospy.logwarn("Execution returned False")
