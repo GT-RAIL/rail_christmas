@@ -1,0 +1,16 @@
+<launch>
+  <include file="$(find rail_grasp_calculation_nodes)/launch/find_grasps.launch">
+    <arg name="remove_table" value="false" />
+    <arg name="num_samples" value="4000" />
+    <arg name="finger_width" value="0.01" />
+    <arg name="hand_outer_diameter" value="0.08" />
+    <arg name="hand_depth" value="0.024" />
+    <arg name="init_bite" value="0.005" />
+    <arg name="hand_height" value="0.058" />
+  </include>
+
+  <node pkg="tree_point_and_click" type="generator" name="generator" output="screen" />
+
+  <node pkg="tree_point_and_click" type="clicker" name="clicker" output="screen" />
+
+</launch>
