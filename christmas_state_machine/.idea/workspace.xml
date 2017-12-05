@@ -300,14 +300,6 @@
     <entry file="file://$PROJECT_DIR$/srv/EndManual.srv" />
     <entry file="file://$PROJECT_DIR$/srv/EndHelp.srv" />
     <entry file="file://$PROJECT_DIR$/config/simulation_params.yaml" />
-    <entry file="file://$PROJECT_DIR$/README.md">
-      <provider selected="true" editor-type-id="text-editor">
-        <state relative-caret-position="0">
-          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
     <entry file="file://$PROJECT_DIR$/config/robot_params.yaml">
       <provider selected="true" editor-type-id="text-editor">
         <state relative-caret-position="234">
@@ -324,6 +316,14 @@
             <element signature="e#55#102#0" expanded="true" />
             <element signature="e#698#1579#0" expanded="false" />
           </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/README.md">
+      <provider selected="true" editor-type-id="text-editor">
+        <state relative-caret-position="0">
+          <caret line="0" column="0" lean-forward="false" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding />
         </state>
       </provider>
     </entry>
