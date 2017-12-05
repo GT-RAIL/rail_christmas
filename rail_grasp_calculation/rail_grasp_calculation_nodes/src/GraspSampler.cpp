@@ -361,11 +361,21 @@ void GraspSampler::rankGraspsPOI(const rail_grasp_calculation_msgs::RankGraspsGo
     //heuristic 2: alignment with principle direction
     double h2 = heuristicAlignment(finalPoses.poses[i], clusters[minClusterIndex]);
 
+    double workspace_diagonal;
+    if (goal->workspace.mode == rail_grasp_calculation_msgs::Workspace::WORKSPACE_VOLUME)
+    {
+        workspace_diagonal = sqrt(pow(goal->workspace.x_max - goal->workspace.x_min, 2)
+                                  + pow(goal->workspace.y_max - goal->workspace.y_min, 2)
+                                  + pow(goal->workspace.z_max - goal->workspace.z_min, 2));
+    }
+    else
+    {
+        workspace_diagonal = sqrt(pow(goal->workspace.roiDimensions.x/2.0, 2)
+                                  + pow(goal->workspace.roiDimensions.y/2.0, 2)
+                                  + pow(goal->workspace.roiDimensions.z/2.0, 2));
+    }
     //heuristic 3: distance from clicked point
-    double h3 = sqrt(squaredDistance(finalPoses.poses[i].position, goal->workspace.roiCenter)) /
-                sqrt(pow(goal->workspace.roiDimensions.x/2.0, 2)
-                     + pow(goal->workspace.roiDimensions.y/2.0, 2)
-                     + pow(goal->workspace.roiDimensions.z/2.0, 2));
+    double h3 = sqrt(squaredDistance(finalPoses.poses[i].position, goal->workspace.roiCenter)) / workspace_diagonal;
 
     //special heuristic: alignment with gravity vector (NOTE: requires hardcoded frame transformation!)
     geometry_msgs::PoseStamped poseIn, poseOut;
@@ -391,8 +401,8 @@ void GraspSampler::rankGraspsPOI(const rail_grasp_calculation_msgs::RankGraspsGo
     double deltaAngle = acos(testXVector.dot(gVector));
     double h4 = deltaAngle/M_PI;
 
-    //double h = 0.5*h4 + 0.3*h1 + 0.125*h2 + 0.075*h3;
-    double h = h4;
+    double h = 0.8*h4 + 0.03*h1 + 0.07*h2 + 0.1*h3;
+    //double h = h4;
     PoseWithHeuristic rankedPose(finalPoses.poses[i], h);
     rankedFinalPoses.push_back(rankedPose);
   }
