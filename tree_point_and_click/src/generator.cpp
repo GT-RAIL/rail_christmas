@@ -17,7 +17,7 @@ Generator::Generator() :
   cloud_received_ = false;
 
   grasps_publisher_ = pnh_.advertise<geometry_msgs::PoseArray>("grasps", 1);
-  best_grasp_publisher_ = pnh_.advertise<geometry_msgs::PoseStamped>("best_grasp", 1);
+  best_grasp_publisher_ = pnh_.advertise<geometry_msgs::PoseStamped>("grasp_topic", 1);
 
   cloud_subscriber_ = n_.subscribe(cloud_topic, 1, &Generator::cloudCallback, this);
   generate_subscriber_ = n_.subscribe("generate_grasps", 1, &Generator::generateCallback, this);
