@@ -10,17 +10,20 @@ import numpy as np
 import rospy
 import actionlib
 import tf
+import tf2_ros
+import tf2_geometry_msgs
 
 from sound_play.libsoundplay import SoundClient
 
 from hlpr_manipulation_utils.arm_moveit2 import ArmMoveIt as Arm
 from hlpr_manipulation_utils.manipulator import Gripper
 
-from geometry_msgs.msg import PointStamped, Point, Pose, PoseStamped
+from geometry_msgs.msg import PointStamped, Point, Pose, PoseStamped, Quaternion
 from move_base_msgs.msg import MoveBaseAction, MoveBaseGoal
 from std_msgs.msg import Empty, Float64
 from vector_msgs.msg import GripperCmd
 
+from octomap_msgs.srv import BoundingBoxQuery
 from std_srvs.srv import Trigger, TriggerResponse
 
 # Define the states used in the study
@@ -67,7 +70,7 @@ class AcceptCandyState(smach.State):
     ):
         smach.State.__init__(
             self,
-            outcomes=['done', 'help'],
+            outcomes=['done', 'help', 'end'],
             output_keys=['prev_state']
         )
 
@@ -154,7 +157,7 @@ class AcceptCandyState(smach.State):
             rospy.loginfo("Decked the tree with stalks of candy!")
             return 'end'
 
-        rospy.sleep(rospy.Duration(secs=5))
+        rospy.sleep(rospy.Duration(secs=3))
         self._candy_in_gripper = False
         return 'done'
 
@@ -184,7 +187,6 @@ class FindGraspState(smach.State):
             '/pan_controller/command', Float64, queue_size=1
         )
 
-        self.tf_listener = tf.TransformListener()
         self.grasp_subscriber = rospy.Subscriber('/generator/grasp_topic', PoseStamped, self.set_grasp)
 
         self.base_client = None
@@ -234,9 +236,17 @@ class PlaceCandyState(smach.State):
         # Arm
         self.arm = Arm()
         self.gripper = Gripper()
-        self.retreat_location = retreat_location
 
+        # Base
+        self.retreat_location = retreat_location
         self.base_client = None
+
+        # TF
+        self.tf_buffer = tf2_ros.Buffer(rospy.Duration(1200.0))
+        self.tf_listener = tf2_ros.TransformListener(self.tf_buffer)
+
+        self.publisher1 = rospy.Publisher('~debug1', PoseStamped, queue_size=1)
+        self.publisher2 = rospy.Publisher('~debug2', PoseStamped, queue_size=1)
 
     def execute(self, userdata):
         """
@@ -246,26 +256,97 @@ class PlaceCandyState(smach.State):
         """
 
         # Only needs to be a pose and not a pose stamped
-        # TODO: Get header / transform frame data from userdata.target_pose
-        target = userdata.target_pose.pose
+        # Get header / transform frame data from userdata.target_pose
+        transform = self.tf_buffer.lookup_transform(
+            "base_link",
+            userdata.target_pose.header.frame_id,
+            rospy.Time(0),
+            rospy.Duration(1.0)
+        )
 
-        # TODO: Transform pose from grasp to orientation of gripper
-        # TODO: Include an offset of positive Z so that the cane is above the
-        # grasp location
+        transformed_pose = tf2_geometry_msgs.do_transform_pose(
+            userdata.target_pose,
+            transform
+        )
+
+        # Create transformation_matrix and transform for candy cane
+        rot = tf.transformations.quaternion_matrix(
+            np.array([
+                transformed_pose.pose.orientation.x,
+                transformed_pose.pose.orientation.y,
+                transformed_pose.pose.orientation.z,
+                transformed_pose.pose.orientation.w,
+            ])
+        )[0:3,0:3]
+        trans = np.array([
+            transformed_pose.pose.position.x,
+            transformed_pose.pose.position.y,
+            transformed_pose.pose.position.z,
+
+        ])
+        transformation_matrix = np.vstack((
+            np.concatenate((rot, trans[:,None]), axis=1),
+            np.array([0,0,0,1])
+        ))
+        transformation_matrix = np.dot(
+            transformation_matrix,\
+            np.array([[1,0,0,0],[0,0,-1,0],[0,1,0,0],[0,0,0,1]])
+            #np.array([[0,0,-1,0.115], [0,1,0,0], [1,0,0,0], [0,0,0,1]])
+        )
+
+        # Transform and then rotate
+        trans = np.zeros((3,))
+        trans[:] = transformation_matrix[0:3,3]
+        rot = transformation_matrix
+        rot[0:3,3] = 0
+        rot[3,0:3] = 0
+        rot[3,3] = 1
+
+        # Go back to the tf transforms
+        q = tf.transformations.quaternion_from_matrix(rot)
+        self.publisher2.publish(transformed_pose)
+        target = transformed_pose
+        target.pose.position = Point(*list(trans))
+        target.pose.orientation = Quaternion(*list(q))
+        self.publisher1.publish(target)
+
+        # Move the arm down to place the candy on the tree
         try:
-            plan = self.arm.plan_ee_pos(target)
+            target.pose.position.z += 0.05
+            target.pose.position.x -= 0.15
+            plan = self.arm.plan_ee_pos(target.pose)
             execution = self.arm.move_robot(plan)
             if not execution:
-                rospy.logwarn("Execution returned False")
+                rospy.logwarn("Execution1 returned False")
+
+            target.pose.position.x += 0.15
+            plan = self.arm.plan_ee_pos(target.pose)
+            execution = self.arm.move_robot(plan)
+            if not execution:
+                rospy.logwarn("Execution1 returned False")
+
+            # Go Down
+            target.pose.position.z -= 0.05
+            plan = self.arm.plan_ee_pos(target.pose)
+            execution = self.arm.move_robot(plan)
+            if not execution:
+                rospy.logwarn("Execution1 returned False")
         except Exception as e:
             rospy.logerror("{}".format(e))
             userdata.prev_state = 'place'
             return 'help'
 
-        # TODO: Move the arm down to place the candy on the tree
-
-            # Open the gripper
+        # Open the gripper
         self.gripper.open()
+
+        try:
+            target.pose.position.x -= 0.15
+            plan = self.arm.plan_ee_pos(target.pose)
+            execution = self.arm.move_robot(plan)
+            if not execution:
+                rospy.logwarn("Execution1 returned False")
+        except Exception as e:
+            rospy.logerror("{}. IGNORING".format(e))
 
         # Move backwards
         if self.base_client is None:
