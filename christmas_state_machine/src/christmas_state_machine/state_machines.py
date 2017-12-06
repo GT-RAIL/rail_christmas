@@ -83,7 +83,8 @@ class ChristmasStateMachine(object):
                 ),
                 transitions={
                     'done': 'FIND_GRASP',
-                    'help': 'HELP'
+                    'help': 'HELP',
+                    'end': 'end',
                 },
                 remapping={
                     'target_pose': 'target_pose',

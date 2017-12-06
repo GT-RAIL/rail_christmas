@@ -81,6 +81,8 @@ class AcceptCandyState(smach.State):
         # Local vars to block until grasp
         self._candy_in_gripper = False
         self.candy_in_gripper_server = rospy.Service('~candy_in_gripper', Trigger, self._handle_candy_in_gripper)
+        self._decked_the_tree = False
+        self.completed_server = rospy.Service('~decked_the_tree', Trigger, self._handle_completed)
 
         # Gripper
         self.gripper = Gripper()
@@ -99,6 +101,12 @@ class AcceptCandyState(smach.State):
         if not self._candy_in_gripper:
             self._candy_in_gripper = True
             self.gripper.close(force=10)
+        return TriggerResponse(success=True)
+
+    def _handle_completed(self, req):
+        """Indicate that all candies are done"""
+        if not self._decked_the_tree:
+            self._decked_the_tree = True
         return TriggerResponse(success=True)
 
     def execute(self, userdata):
@@ -139,9 +147,15 @@ class AcceptCandyState(smach.State):
 
         # Wait until the candy is in the gripper
         rospy.loginfo("Waiting for candy")
-        while not self._candy_in_gripper:
+        while not self._candy_in_gripper and not self._decked_the_tree:
             rospy.sleep(rospy.Duration(nsecs=1e8))
 
+        if self._decked_the_tree:
+            rospy.loginfo("Decked the tree with stalks of candy!")
+            return 'end'
+
+        rospy.sleep(rospy.Duration(secs=5))
+        self._candy_in_gripper = False
         return 'done'
 
 
@@ -230,25 +244,25 @@ class PlaceCandyState(smach.State):
         :param userdata: smach data passed between states
         :return:
         """
-        if None:
-            # Only needs to be a pose and not a pose stamped
-            # TODO: Get header / transform frame data from userdata.target_pose
-            target = userdata.target_pose.pose
 
-            # TODO: Transform pose from grasp to orientation of gripper
-            # TODO: Include an offset of positive Z so that the cane is above the
-            # grasp location
-            try:
-                plan = self.arm.plan_ee_pos(target)
-                execution = self.arm.move_robot(plan)
-                if not execution:
-                    rospy.logwarn("Execution returned False")
-            except Exception as e:
-                rospy.logerror("{}".format(e))
-                userdata.prev_state = 'place'
-                return 'help'
+        # Only needs to be a pose and not a pose stamped
+        # TODO: Get header / transform frame data from userdata.target_pose
+        target = userdata.target_pose.pose
 
-            # TODO: Move the arm down to place the candy on the tree
+        # TODO: Transform pose from grasp to orientation of gripper
+        # TODO: Include an offset of positive Z so that the cane is above the
+        # grasp location
+        try:
+            plan = self.arm.plan_ee_pos(target)
+            execution = self.arm.move_robot(plan)
+            if not execution:
+                rospy.logwarn("Execution returned False")
+        except Exception as e:
+            rospy.logerror("{}".format(e))
+            userdata.prev_state = 'place'
+            return 'help'
+
+        # TODO: Move the arm down to place the candy on the tree
 
             # Open the gripper
         self.gripper.open()
