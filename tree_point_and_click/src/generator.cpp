@@ -11,7 +11,7 @@ Generator::Generator() :
     rank_grasps_poi_client_("/grasp_sampler/rank_grasps_poi")
 {
   string cloud_topic;
-  pnh_.param<string>("cloud_topic", cloud_topic, "/kinect2/qhd/points");
+  pnh_.param<string>("cloud_topic", cloud_topic, "/kinect/qhd/points");
   pnh_.param<double>("roi_radius", roi_radius_, 0.1);
 
   cloud_received_ = false;

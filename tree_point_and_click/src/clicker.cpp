@@ -10,7 +10,7 @@ Clicker::Clicker() :
   // read parameters
   string cloudTopic;
   //pnh.param<string>("cloud_topic", cloudTopic, "/hw/depth_perch/points");
-  pnh.param<string>("cloud_topic", cloudTopic, "/kinect2/qhd/points");
+  pnh.param<string>("cloud_topic", cloudTopic, "/kinect/qhd/points");
 
   test_publisher_ = n.advertise<geometry_msgs::PointStamped>("generate_grasps", 1);
   cloudSubscriber = n.subscribe(cloudTopic, 1, &Clicker::cloudCallback, this);
@@ -58,8 +58,8 @@ void Clicker::processInteractiveCloudFeedback(const visualization_msgs::Interact
         geometry_msgs::PointStamped clickedPoint, convertedPoint;
         clickedPoint.header.frame_id = feedback->header.frame_id;
         clickedPoint.point = feedback->mouse_point;
-        tfListener.transformPoint("kinect2_link", ros::Time(0), clickedPoint, "kinect2_link", convertedPoint);
-        ROS_INFO("In kinect2_link frame: (%f, %f, %f)", convertedPoint.point.x, convertedPoint.point.y, convertedPoint.point.z);
+        tfListener.transformPoint("kinect_rgb_optical_frame", ros::Time(0), clickedPoint, "kinect_rgb_optical_frame", convertedPoint);
+        ROS_INFO("In kinect_rgb_optical_frame frame: (%f, %f, %f)", convertedPoint.point.x, convertedPoint.point.y, convertedPoint.point.z);
 
         test_publisher_.publish(convertedPoint);
       }
